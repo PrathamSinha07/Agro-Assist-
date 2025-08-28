@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Farming Assistant</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container main-container">
+        <h3 class="text-center text-success mb-3" data-key="title">Smart Farming Assistant</h3>
+
+        <div class="mb-3">
+            <label for="language-selector" class="form-label" data-key="lang_select_label">Select Language:</label>
+            <select id="language-selector" class="form-select">
+                <option value="hi">हिंदी (Hindi)</option>
+                <option value="mr">मराठी (Marathi)</option>
+                <option value="bn">বাংলা (Bengali)</option>
+                <option value="or">ଓଡ଼ିଆ (Odia)</option>
+            </select>
+        </div>
+
+        <form id="upload-form">
+            <div class="mb-3">
+                <label for="file-input" class="form-label" data-key="upload_label">Upload a photo of your crop:</label>
+                <input type="file" id="file-input" class="form-control" accept="image/*" required>
+            </div>
+            <button type="submit" class="btn btn-success w-100" data-key="analyze_button">Analyze</button>
+        </form>
+
+        <div id="loader" class="text-center mt-3">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p data-key="loading_text">Analyzing, please wait...</p>
+        </div>
+
+        <div id="results" class="card mt-4" style="display:none;">
+            <div class="card-header"><b data-key="results_header">Analysis Result</b></div>
+            <div class="card-body">
+                <p><b data-key="disease_label">Disease:</b> <span id="disease-name"></span></p>
+                <p><b data-key="cause_label">Cause:</b> <span id="cause-name"></span></p>
+                <hr>
+                <p><b data-key="remedy_lang_label">Remedy:</b></p>
+                <p id="remedy-lang"></p>
+                <p><b>Remedy (English):</b></p>
+                <p id="remedy-en"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
