@@ -840,6 +840,10 @@ analyzeBtn.addEventListener('click', async () => {
     const langCode = langSelector.value;
     const langName = languageNames[langCode] || "English";
 
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('language', langName);
+
     // Show loading overlay
     const currentLangData = translations[langCode] || translations['en'];
     loaderText.textContent = currentLangData.loading_text;
@@ -850,72 +854,23 @@ analyzeBtn.addEventListener('click', async () => {
     resultsPlaceholder.style.display = 'flex';
 
     try {
-        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-        
-        // Extract raw base64 data and mimeType
-        const base64Parts = currentSelectedImageBase64.split(',');
-        const base64Data = base64Parts[1];
-        const mimeType = file.type || 'image/jpeg';
-
-        const payload = {
-            contents: [
-                {
-                    parts: [
-                        {
-                            text: `Analyze this crop leaf image. Identify if the crop is healthy or infected, what disease it has (if any), the cause, and the recommended remedy.
-If a language other than English is requested, provide the remedy in that language.
-You must return a JSON object with this exact structure:
-{
-  "status": "Infected/Healthy",
-  "disease": "Disease Name or Healthy/No Disease",
-  "cause": "Cause or Source",
-  "remedy": "Recommended remedy in ${langName}",
-  "remedy_en": "Recommended remedy in English"
-}`
-                        },
-                        {
-                            inlineData: {
-                                mimeType: mimeType,
-                                data: base64Data
-                            }
-                        }
-                    ]
-                }
-            ],
-            generationConfig: {
-                responseMimeType: "application/json"
-            }
-        };
-
-        const response = await fetch(url, {
+        const response = await fetch('/api/diagnose', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
+            body: formData
         });
 
-        if (!response.ok) {
-            throw new Error('Gemini API call failed with status: ' + response.status);
-        }
-
-        const geminiData = await response.json();
+        const textResponse = await response.text();
+        let resultJson;
         
-        if (!geminiData.candidates || geminiData.candidates.length === 0) {
-            throw new Error('No response candidates returned from Gemini API.');
+        try {
+            resultJson = JSON.parse(textResponse);
+        } catch (e) {
+            throw new Error('Server returned invalid response structure: ' + textResponse);
         }
 
-        const responseText = geminiData.candidates[0].content.parts[0].text.trim();
-        const geminiResult = JSON.parse(responseText);
-
-        const resultJson = {
-            status: geminiResult.status,
-            diseaseName: geminiResult.disease,
-            cause: geminiResult.cause,
-            remedy_local: geminiResult.remedy,
-            remedy_en: geminiResult.remedy_en || geminiResult.remedy
-        };
+        if (!response.ok || resultJson.error) {
+            throw new Error(resultJson.error || ('Network response was not ok. Status: ' + response.status));
+        }
 
         // Render response cards
         document.getElementById('disease-name').textContent = resultJson.diseaseName || 'N/A';

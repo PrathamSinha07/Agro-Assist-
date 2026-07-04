@@ -23,7 +23,7 @@ public class DiagnosisController {
     @Autowired
     private DiagnosisRepository diagnosisRepository;
 
-    @PostMapping("/v1/diagnose/plant")
+    @PostMapping({"/v1/diagnose/plant", "/diagnose"})
     public ResponseEntity<String> diagnosePlant(@RequestParam("file") MultipartFile file,
             @RequestParam(value = "language", defaultValue = "English") String language) {
         if (file.isEmpty()) {
