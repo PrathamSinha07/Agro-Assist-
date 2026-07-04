@@ -854,7 +854,7 @@ analyzeBtn.addEventListener('click', async () => {
     resultsPlaceholder.style.display = 'flex';
 
     try {
-        const response = await fetch('/api/diagnose', {
+        const response = await fetch('/api/v1/diagnose/plant', {
             method: 'POST',
             body: formData
         });
