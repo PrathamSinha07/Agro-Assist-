@@ -1,3 +1,55 @@
+// --- Global Toast Notification Helper ---
+function showToast(message, type = 'error') {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) return;
+
+    // Mask raw exceptions/errors into user-friendly statements
+    let friendlyMessage = message;
+    if (message.includes('API key') || message.includes('API_KEY') || message.includes('401') || message.includes('Quota Exceeded') || message.includes('quota')) {
+        friendlyMessage = "API Credentials Issue or API Quota Exceeded.";
+    } else if (message.includes('auth') || message.includes('password') || message.includes('credentials') || message.includes('login') || message.includes('Sign in')) {
+        friendlyMessage = "Authentication Failed. Please check your credentials.";
+    } else if (message.includes('registered') || message.includes('already exists')) {
+        friendlyMessage = "An account with this email is already registered.";
+    } else if (message.includes('Failed to fetch') || message.includes('network') || message.includes('NetworkResponse')) {
+        friendlyMessage = "Network Connection Error. Please try again.";
+    } else if (message.includes('Invalid file format') || message.includes('file type')) {
+        friendlyMessage = "Invalid file format. Please upload an image (JPG, PNG, WEBP).";
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+
+    const iconClass = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+    
+    toast.innerHTML = `
+        <i class="fa-solid ${iconClass} toast-icon"></i>
+        <div class="toast-content">${friendlyMessage}</div>
+        <button class="toast-close-btn" aria-label="Close notification">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    `;
+
+    const closeBtn = toast.querySelector('.toast-close-btn');
+    closeBtn.addEventListener('click', () => {
+        toast.style.animation = 'toastFadeOut 0.3s ease-in forwards';
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    });
+
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.style.animation = 'toastFadeOut 0.3s ease-in forwards';
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }
+    }, 4000);
+}
+
 // --- Language Translation Setup ---
 const translations = {
     en: {
@@ -218,12 +270,12 @@ loginForm.addEventListener('submit', (e) => {
     const matchedUser = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
 
     if (!matchedUser) {
-        alert('Account not found. Please sign up first.');
+        showToast('Account not found. Please sign up first.', 'error');
         return;
     }
 
     if (matchedUser.password !== password) {
-        alert('Invalid email or password. Please try again.');
+        showToast('Invalid email or password. Please try again.', 'error');
         return;
     }
 
@@ -246,7 +298,7 @@ signupForm.addEventListener('submit', (e) => {
     const userExists = registeredUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
 
     if (userExists) {
-        alert('An account with this email is already registered. Please login.');
+        showToast('An account with this email is already registered. Please login.', 'error');
         return;
     }
 
@@ -254,7 +306,7 @@ signupForm.addEventListener('submit', (e) => {
     registeredUsers.push({ name, email, password });
     localStorage.setItem('agro_assist_users', JSON.stringify(registeredUsers));
 
-    alert('Account created successfully! Please sign in using your credentials.');
+    showToast('Account created successfully! Please sign in using your credentials.', 'success');
     showCard('login');
     document.getElementById('login-email').value = email;
 });
@@ -801,7 +853,7 @@ fileInput.addEventListener('change', (e) => {
 // Handle local file loading & base64 preview encoding
 function handleFileSelect(file) {
     if (!file.type.startsWith('image/')) {
-        alert('Invalid file format. Please upload an image file (JPG, PNG, WEBP).');
+        showToast('Invalid file format. Please upload an image file (JPG, PNG, WEBP).', 'error');
         return;
     }
 
@@ -833,7 +885,7 @@ removeImageBtn.addEventListener('click', (e) => {
 analyzeBtn.addEventListener('click', async () => {
     const file = fileInput.files[0];
     if (!file) {
-        alert("Please select or drop a leaf image first.");
+        showToast("Please select or drop a leaf image first.", "error");
         return;
     }
 
@@ -934,7 +986,7 @@ analyzeBtn.addEventListener('click', async () => {
 
     } catch (error) {
         console.error('Error during analysis:', error);
-        alert('An error occurred during diagnosis: ' + error.message);
+        showToast('An error occurred during diagnosis: ' + error.message, 'error');
     } finally {
         loaderOverlay.style.display = 'none';
     }
