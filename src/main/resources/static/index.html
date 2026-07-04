@@ -3,50 +3,488 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Farming Assistant</title>
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <title>Agro Assist: AI-Powered Crop Disease Diagnosis</title>
+    <meta name="description" content="Get instant AI-powered crop disease diagnosis, causes, and local remedies in multiple regional languages to improve your farm yields.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for beautiful icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container main-container">
-        <h3 class="text-center text-success mb-3" data-key="title">Smart Farming Assistant</h3>
-
-        <div class="mb-3">
-            <label for="language-selector" class="form-label" data-key="lang_select_label">Select Language:</label>
-            <select id="language-selector" class="form-select">
-                <option value="hi">हिंदी (Hindi)</option>
-                <option value="mr">मराठी (Marathi)</option>
-                <option value="bn">বাংলা (Bengali)</option>
-                <option value="or">ଓଡ଼ିଆ (Odia)</option>
-            </select>
+    <!-- Full-screen Loading Overlay -->
+    <div id="loader-overlay" class="loader-overlay" style="display: none;">
+        <div class="loader-content">
+            <div class="spinner"></div>
+            <p id="loader-text">Analyzing your crop leaf, please wait...</p>
         </div>
+    </div>
 
-        <form id="upload-form">
-            <div class="mb-3">
-                <label for="file-input" class="form-label" data-key="upload_label">Upload a photo of your crop:</label>
-                <input type="file" id="file-input" class="form-control" accept="image/*" required>
-            </div>
-            <button type="submit" class="btn btn-success w-100" data-key="analyze_button">Analyze</button>
-        </form>
+    <!-- 1. LANDING & AUTH CONTAINER -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-backdrop"></div>
+        <div class="auth-card-wrapper">
+            <header class="auth-header">
+                <i class="fa-solid fa-leaf text-mint animate-pulse header-icon"></i>
+                <h1>Agro Assist</h1>
+                <p>AI-Powered Crop Pathology & Sustainable Agriculture</p>
+            </header>
 
-        <div id="loader" class="text-center mt-3">
-            <div class="spinner-border text-success" role="status">
-                <span class="visually-hidden">Loading...</span>
+            <!-- Login Form Card -->
+            <div id="login-card" class="auth-card card">
+                <h2><i class="fa-solid fa-right-to-bracket"></i> Sign In</h2>
+                <p class="auth-card-desc">Log in to diagnose crops and access past diagnostic records.</p>
+                <form id="login-form">
+                    <div class="input-group">
+                        <label for="login-email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                        <input type="email" id="login-email" placeholder="farmer@agro-assist.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="login-password"><i class="fa-solid fa-lock"></i> Password</label>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-primary auth-submit-btn">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+                    </button>
+                </form>
+                <div class="auth-switch-link">
+                    <p>Don't have an account? <span id="go-to-signup" class="link-span">Create Account</span></p>
+                </div>
             </div>
-            <p data-key="loading_text">Analyzing, please wait...</p>
+
+            <!-- Signup Form Card -->
+            <div id="signup-card" class="auth-card card" style="display: none;">
+                <h2><i class="fa-solid fa-user-plus"></i> Create Account</h2>
+                <p class="auth-card-desc">Sign up to get access to custom remedies in regional languages.</p>
+                <form id="signup-form">
+                    <div class="input-group">
+                        <label for="signup-name"><i class="fa-solid fa-user"></i> Full Name</label>
+                        <input type="text" id="signup-name" placeholder="John Doe" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="signup-email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                        <input type="email" id="signup-email" placeholder="farmer@agro-assist.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="signup-password"><i class="fa-solid fa-lock"></i> Password</label>
+                        <input type="password" id="signup-password" placeholder="••••••••" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn-primary auth-submit-btn">
+                        <i class="fa-solid fa-check"></i> Sign Up
+                    </button>
+                </form>
+                <div class="auth-switch-link">
+                    <p>Already have an account? <span id="go-to-login" class="link-span">Sign In here</span></p>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <div id="results" class="card mt-4" style="display:none;">
-            <div class="card-header"><b data-key="results_header">Analysis Result</b></div>
-            <div class="card-body">
-                <p><b data-key="disease_label">Disease:</b> <span id="disease-name"></span></p>
-                <p><b data-key="cause_label">Cause:</b> <span id="cause-name"></span></p>
-                <hr>
-                <p><b data-key="remedy_lang_label">Remedy:</b></p>
-                <p id="remedy-lang"></p>
-                <p><b>Remedy (English):</b></p>
-                <p id="remedy-en"></p>
+    <!-- 2. MAIN APPLICATION PLATFORM (POST-AUTH) -->
+    <div id="app-platform" class="app-platform" style="display: none;">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-leaf logo-icon"></i>
+                <h2>Agro Assist</h2>
+            </div>
+            
+            <div class="user-profile-badge">
+                <div class="avatar-icon"><i class="fa-solid fa-circle-user"></i></div>
+                <div class="user-info-text">
+                    <span class="user-greeting">Welcome,</span>
+                    <span class="user-name-container">
+                        <span id="user-display-name" class="user-name">Farmer</span>
+                        <button type="button" id="edit-name-btn" class="btn-edit-name" title="Edit Name">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                    </span>
+                </div>
+                <button type="button" class="mobile-logout-btn" id="mobile-logout-btn" title="Log Out">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button id="nav-home" class="nav-btn active"><i class="fas fa-home"></i> Home</button>
+                <button id="nav-diagnostics" class="nav-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> Diagnostics</button>
+                <button id="nav-history" class="nav-btn"><i class="fa-solid fa-clock-rotate-left"></i> Records History</button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button type="button" id="btn-logout" class="btn-logout">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Log Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="app-main-content">
+            <!-- VIEW: HOME DASHBOARD -->
+            <div id="view-home" class="view-panel">
+                <header class="panel-header">
+                    <h1 id="home-greeting">Good morning, <span id="home-username">Farmer</span></h1>
+                    <p class="panel-subtitle">Here is the summary of your farm activities for today.</p>
+                </header>
+
+                <div class="home-grid">
+                    <div class="home-row-1">
+                        <!-- Interactive Weather Card -->
+                        <div id="weather-card" class="weather-card">
+                            <div class="weather-card-content">
+                                <div class="weather-main-info">
+                                    <div class="weather-temp-container">
+                                        <span id="home-weather-temp" class="weather-temp">--°C</span>
+                                        <span id="home-weather-desc" class="weather-desc">Loading weather...</span>
+                                    </div>
+                                    <div class="weather-icon-wrapper">
+                                        <i id="home-weather-icon" class="fa-solid fa-cloud-sun weather-icon-large animate-float"></i>
+                                    </div>
+                                </div>
+                                <div class="weather-footer-info">
+                                    <span class="weather-location"><i class="fa-solid fa-location-dot"></i> <span id="home-weather-location">Pune, India</span></span>
+                                    <span class="weather-prompt">Click to view details <i class="fa-solid fa-arrow-right"></i></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Soil Moisture Card -->
+                        <div class="card soil-moisture-card">
+                            <h2><i class="fa-solid fa-droplet"></i> Soil Moisture</h2>
+                            <div class="gauge-container">
+                                <svg class="gauge-svg" viewBox="0 0 100 100">
+                                    <circle class="gauge-bg-circle" cx="50" cy="50" r="40" />
+                                    <circle class="gauge-fill-circle" cx="50" cy="50" r="40" stroke-dasharray="251.32" stroke-dashoffset="87.96" />
+                                </svg>
+                                <div class="gauge-text-overlay">
+                                    <span class="gauge-percentage">65%</span>
+                                    <span class="gauge-status-text">Optimal</span>
+                                </div>
+                            </div>
+                            <p class="soil-moisture-note">Soil moisture is at a healthy level. No irrigation needed today.</p>
+                        </div>
+                    </div>
+
+                    <div class="home-row-2">
+                        <!-- Tasks for Today -->
+                        <div class="card tasks-card">
+                            <h2><i class="fa-solid fa-list-check"></i> Tasks for Today</h2>
+                            <div class="task-input-container" style="display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
+                               <input type="text" id="new-task-input" placeholder="Enter custom farmer task..." style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-family: var(--font);">
+                               <button id="add-task-btn" style="background-color: #1e5631; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-family: var(--font); font-weight: 600;">+ Add</button>
+                            </div>
+                            <ul id="task-list" class="task-list">
+                                <!-- Dynamically populated -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: DIAGNOSTICS -->
+            <div id="view-diagnostics" class="view-panel" style="display: none;">
+                <!-- PANEL A: DIAGNOSTICS DASHBOARD -->
+                <section id="panel-dashboard" class="content-panel active-panel">
+                    <header class="panel-header">
+                        <h1 data-key="title_desc">AI-powered crop disease diagnosis and remedies</h1>
+                        <p>Upload crop leaf photos to identify pathology and review tailored remedies.</p>
+                    </header>
+
+                    <div class="dashboard-grid">
+                        <!-- Left: Control card -->
+                        <div class="control-panel-column">
+                            <div class="card diagnosis-control-card">
+                                <h2 data-key="input_title"><i class="fa-solid fa-sliders"></i> Diagnosis Settings</h2>
+                                
+                                <!-- Language Selector -->
+                                <div class="setting-group">
+                                    <label for="language-selector" data-key="lang_select_label">Select Remedy Language:</label>
+                                    <div class="select-wrapper">
+                                        <select id="language-selector">
+                                            <option value="en">English (English)</option>
+                                            <option value="hi">हिंदी (Hindi)</option>
+                                            <option value="mr">मराठी (Marathi)</option>
+                                            <option value="bn">বাংলা (Bengali)</option>
+                                            <option value="or">ଓଡ଼ିଆ (Odia)</option>
+                                        </select>
+                                        <i class="fa-solid fa-chevron-down select-arrow"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Drag & Drop Upload Zone -->
+                                <div class="setting-group">
+                                    <label data-key="upload_label">Upload Leaf Image:</label>
+                                    <div id="drop-zone" class="drop-zone">
+                                        <input type="file" id="file-input" accept="image/*" style="display: none;">
+                                        <div class="drop-zone-prompt">
+                                            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                                            <p class="prompt-text"><span class="highlight">Click to upload</span> or drag and drop</p>
+                                            <p class="helper-text">Supports JPG, PNG, WEBP (Max 10MB)</p>
+                                        </div>
+                                        <div id="preview-container" class="preview-container" style="display: none;">
+                                            <img id="image-preview" src="#" alt="Leaf Preview">
+                                            <button type="button" id="remove-image-btn" class="remove-btn" aria-label="Remove image">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="button" id="analyze-btn" class="btn-primary" disabled data-key="analyze_button">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Diagnose Crop
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Right: Results card -->
+                        <div class="results-panel-column">
+                            <!-- Welcome/Placeholder view -->
+                            <div id="results-placeholder" class="placeholder-view card">
+                                <i class="fa-solid fa-wand-magic-sparkles placeholder-icon"></i>
+                                <h3 data-key="placeholder_title">Ready for Diagnosis</h3>
+                                <p data-key="placeholder_desc">Upload an image of a diseased crop leaf and select your preferred language to get AI-powered insights.</p>
+                            </div>
+
+                            <!-- Actual Results Card -->
+                            <div id="results-card" class="results-card card" style="display: none;">
+                                <div class="card-header">
+                                    <h2><i class="fa-solid fa-square-poll-vertical"></i> <span data-key="results_header">Diagnosis Result</span></h2>
+                                    <span class="badge" id="health-badge">Detected</span>
+                                </div>
+                                
+                                <div class="result-details">
+                                    <!-- Disease Card -->
+                                    <div class="detail-card disease">
+                                        <div class="detail-icon"><i class="fa-solid fa-virus"></i></div>
+                                        <div class="detail-info">
+                                            <span class="label" data-key="disease_label">Disease Name</span>
+                                            <h3 id="disease-name" class="value">-</h3>
+                                        </div>
+                                    </div>
+
+                                    <!-- Cause Card -->
+                                    <div class="detail-card cause">
+                                        <div class="detail-icon"><i class="fa-solid fa-circle-info"></i></div>
+                                        <div class="detail-info">
+                                            <span class="label" data-key="cause_label">Cause / Source</span>
+                                            <p id="cause-name" class="value">-</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Remedies Divider -->
+                                    <div class="section-divider">
+                                        <span data-key="remedies_divider">Recommended Remedies</span>
+                                    </div>
+
+                                    <div class="remedies-grid">
+                                        <!-- Remedy in Local Language -->
+                                        <div class="remedy-card local">
+                                            <div class="remedy-header">
+                                                <i class="fa-solid fa-language"></i>
+                                                <span id="remedy-lang-label" class="label">Remedy</span>
+                                            </div>
+                                            <p id="remedy-lang" class="remedy-text">-</p>
+                                        </div>
+
+                                        <!-- Remedy in English -->
+                                        <div class="remedy-card english">
+                                            <div class="remedy-header">
+                                                <i class="fa-solid fa-globe"></i>
+                                                <span class="label">Remedy (English)</span>
+                                            </div>
+                                            <p id="remedy-en" class="remedy-text">-</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- VIEW: WEATHER DETAIL -->
+            <div id="view-weather-detail" class="view-panel" style="display: none;">
+                <div class="weather-detail-header">
+                    <button id="btn-back-to-home" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Back to Home</button>
+                </div>
+                
+                <header class="panel-header weather-detail-title-header">
+                    <div class="weather-detail-header-left">
+                        <h1 id="detail-weather-location">Pune, India</h1>
+                        <p id="detail-weather-date">Loading date...</p>
+                    </div>
+                    <div class="weather-detail-header-right">
+                        <span id="detail-weather-condition" class="badge weather-condition-badge">Loading...</span>
+                    </div>
+                </header>
+
+                <div class="weather-detail-grid">
+                    <!-- Main weather overview -->
+                    <div class="card weather-main-detail-card">
+                        <div class="main-detail-layout">
+                            <div class="main-detail-left">
+                                <span id="detail-weather-temp" class="detail-temp">--°C</span>
+                                <span class="detail-feels-like">Feels like <span id="detail-weather-feels-like">--°C</span></span>
+                            </div>
+                            <div class="main-detail-right">
+                                <i id="detail-weather-icon" class="fa-solid fa-cloud-sun detail-weather-icon animate-float"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Field Dynamics Grid (4 cards) -->
+                    <div class="field-dynamics-grid">
+                        <div class="card dynamic-card">
+                            <div class="dynamic-icon"><i class="fa-solid fa-wind"></i></div>
+                            <div class="dynamic-info">
+                                <span class="dynamic-label">Wind Speed</span>
+                                <h3 id="weather-wind-speed" class="dynamic-value">-- km/h</h3>
+                            </div>
+                        </div>
+                        <div class="card dynamic-card">
+                            <div class="dynamic-icon"><i class="fa-solid fa-droplet"></i></div>
+                            <div class="dynamic-info">
+                                <span class="dynamic-label">Humidity</span>
+                                <h3 id="weather-humidity" class="dynamic-value">--%</h3>
+                            </div>
+                        </div>
+                        <div class="card dynamic-card">
+                            <div class="dynamic-icon"><i class="fa-solid fa-sun"></i></div>
+                            <div class="dynamic-info">
+                                <span class="dynamic-label">UV Index</span>
+                                <h3 id="weather-uv-index" class="dynamic-value">--</h3>
+                            </div>
+                        </div>
+                        <div class="card dynamic-card">
+                            <div class="dynamic-icon"><i class="fa-solid fa-gauge"></i></div>
+                            <div class="dynamic-info">
+                                <span class="dynamic-label">Pressure</span>
+                                <h3 id="weather-pressure" class="dynamic-value">-- hPa</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hourly Outlook (Horizontal Scroll) -->
+                    <div class="card hourly-outlook-card">
+                        <h2><i class="fa-regular fa-clock"></i> Hourly Outlook</h2>
+                        <div id="hourly-scroll-track" class="hourly-scroll-track">
+                            <div class="hourly-loading">Loading hourly forecast...</div>
+                        </div>
+                    </div>
+
+                    <!-- 7-Day Outlook (Vertical List) -->
+                    <div class="card daily-outlook-card">
+                        <h2><i class="fa-regular fa-calendar-days"></i> 7-Day Outlook</h2>
+                        <div id="daily-list" class="daily-list">
+                            <div class="daily-loading">Loading daily forecast...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL B: PAST RECORDS HISTORY -->
+            <section id="panel-history" class="content-panel" style="display: none;">
+                <header class="panel-header">
+                    <h1>Diagnostic Records History</h1>
+                    <p>Review and search all crop pathology analyses made under your session.</p>
+                </header>
+
+                <div class="card history-control-card">
+                    <div class="history-filters">
+                        <div class="search-input-wrapper">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="history-search" placeholder="Search by disease name or cause...">
+                        </div>
+                        <div class="filter-select-wrapper">
+                            <select id="history-filter-status">
+                                <option value="all">All Conditions</option>
+                                <option value="infected">Infected</option>
+                                <option value="healthy">Healthy</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down filter-arrow"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="history-empty-state" class="placeholder-view card">
+                    <i class="fa-solid fa-folder-open placeholder-icon"></i>
+                    <h3>No Records Found</h3>
+                    <p>Perform your first crop leaf analysis in the Diagnostics tab to start saving history log records.</p>
+                </div>
+
+                <!-- Records Grid -->
+                <div id="history-grid-container" class="history-grid" style="display: none;">
+                    <!-- Dynamically populated card nodes go here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 3. DETAILED RECORD VIEW MODAL -->
+    <div id="record-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-container card">
+            <header class="modal-header">
+                <h2><i class="fa-solid fa-file-invoice"></i> Diagnostic Sheet</h2>
+                <button type="button" id="close-modal-btn" class="close-modal-btn" aria-label="Close modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </header>
+            <div class="modal-body">
+                <div class="modal-summary-section">
+                    <div class="modal-image-wrapper">
+                        <img id="modal-image-preview" src="#" alt="Analyzed Leaf">
+                    </div>
+                    <div class="modal-meta-details">
+                        <span class="badge" id="modal-health-badge">Detected</span>
+                        <div class="meta-item">
+                            <span class="meta-label">Diagnostic Date</span>
+                            <span id="modal-date" class="meta-value">-</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Selected Language</span>
+                            <span id="modal-lang" class="meta-value">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="result-details">
+                    <div class="detail-card disease" id="modal-disease-card">
+                        <div class="detail-icon"><i class="fa-solid fa-virus"></i></div>
+                        <div class="detail-info">
+                            <span class="label">Disease Name</span>
+                            <h3 id="modal-disease-name" class="value">-</h3>
+                        </div>
+                    </div>
+                    <div class="detail-card cause">
+                        <div class="detail-icon"><i class="fa-solid fa-circle-info"></i></div>
+                        <div class="detail-info">
+                            <span class="label">Cause / Source</span>
+                            <p id="modal-cause-name" class="value">-</p>
+                        </div>
+                    </div>
+                    <div class="section-divider">
+                        <span>Remedies Sheet</span>
+                    </div>
+                    <div class="remedies-grid">
+                        <div class="remedy-card local">
+                            <div class="remedy-header">
+                                <i class="fa-solid fa-language"></i>
+                                <span id="modal-remedy-lang-label" class="label">Remedy</span>
+                            </div>
+                            <p id="modal-remedy-lang" class="remedy-text">-</p>
+                        </div>
+                        <div class="remedy-card english">
+                            <div class="remedy-header">
+                                <i class="fa-solid fa-globe"></i>
+                                <span class="label">Remedy (English)</span>
+                            </div>
+                            <p id="modal-remedy-en" class="remedy-text">-</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
