@@ -850,7 +850,8 @@ analyzeBtn.addEventListener('click', async () => {
     resultsPlaceholder.style.display = 'flex';
 
     try {
-        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + window.atob('QVEuQWI4Uk42THNIZlZZWlRtSUFTZW1uM2ZxZXR6U2JNaHRmeEhkV0FKUERROVpyd1pteHc=');
+        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
         
         // Extract raw base64 data and mimeType
         const base64Parts = currentSelectedImageBase64.split(',');
