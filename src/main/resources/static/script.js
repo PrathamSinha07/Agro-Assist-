@@ -55,6 +55,26 @@ function showToast(message, type = 'error') {
     }, 4000);
 }
 
+// Promise-based custom confirmation modal
+function showConfirm(message) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirm-modal');
+    document.getElementById('confirm-modal-message').innerText = message;
+    modal.style.display = 'flex';
+    
+    const onOk = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
+    const cleanup = () => {
+      document.getElementById('confirm-modal-ok').removeEventListener('click', onOk);
+      document.getElementById('confirm-modal-cancel').removeEventListener('click', onCancel);
+      modal.style.display = 'none';
+    };
+    
+    document.getElementById('confirm-modal-ok').addEventListener('click', onOk);
+    document.getElementById('confirm-modal-cancel').addEventListener('click', onCancel);
+  });
+}
+
 // --- Language Translation Setup ---
 const translations = {
     en: {
@@ -1044,14 +1064,15 @@ historyFilterStatus.addEventListener('change', loadPastRecords);
 // Attach a single, robust event listener to the parent history grid container (Event Delegation)
 const historyGridContainer = document.getElementById('history-grid-container');
 if (historyGridContainer) {
-    historyGridContainer.addEventListener('click', function(e) {
+    historyGridContainer.addEventListener('click', async function(e) {
         const deleteBtn = e.target.closest('.delete-record-btn');
         if (deleteBtn) {
             e.preventDefault();
             e.stopPropagation();
             const recordId = deleteBtn.getAttribute('data-id');
-            if (confirm('Are you sure you want to delete this search history record?')) {
-                executeRecordDeletion(recordId, deleteBtn.closest('.card-element'));
+            const confirmed = await showConfirm("Are you sure you want to delete this search history record?");
+            if (confirmed) {
+                await executeRecordDeletion(recordId, deleteBtn.closest('.card-element'));
             }
         }
     });
@@ -1111,6 +1132,7 @@ function renderHistoryGrid(records) {
 async function executeRecordDeletion(id, cardElement) {
     if (!currentSessionUser) return;
     
+    let success = true;
     // Trigger backend deletion endpoint to process the DELETE command
     if (id && id !== 'undefined' && id !== 'null') {
         try {
@@ -1119,41 +1141,48 @@ async function executeRecordDeletion(id, cardElement) {
             });
             if (!response.ok && response.status !== 204) {
                 console.error('Failed to notify backend about record deletion. Status:', response.status);
+                success = false;
             }
         } catch (err) {
             console.error('Error contacting server for record deletion:', err);
+            success = false;
         }
     }
 
-    // Delete locally from localStorage
-    const historyKey = `agro_assist_records_${currentSessionUser.email}`;
-    let userRecords = JSON.parse(localStorage.getItem(historyKey) || '[]');
-    
-    // Filter matching either the id OR if id matches timestamp (as string or number)
-    userRecords = userRecords.filter(r => {
-        if (id && id !== 'undefined' && id !== 'null') {
-            return String(r.id) !== String(id) && String(r.timestamp) !== String(id);
-        }
-        return true;
-    });
-    localStorage.setItem(historyKey, JSON.stringify(userRecords));
-
-    // Visually fade out and remove card instantly
-    if (cardElement) {
-        cardElement.style.transition = 'all 0.3s ease';
-        cardElement.style.opacity = '0';
-        cardElement.style.transform = 'scale(0.9)';
-        setTimeout(() => {
-            cardElement.remove();
-            
-            // Check if there are any cards left to handle empty state dynamically
-            const remainingCards = historyGrid.querySelectorAll('.card-element');
-            if (remainingCards.length === 0) {
-                loadPastRecords();
+    if (success) {
+        // Delete locally from localStorage
+        const historyKey = `agro_assist_records_${currentSessionUser.email}`;
+        let userRecords = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        
+        // Filter matching either the id OR if id matches timestamp (as string or number)
+        userRecords = userRecords.filter(r => {
+            if (id && id !== 'undefined' && id !== 'null') {
+                return String(r.id) !== String(id) && String(r.timestamp) !== String(id);
             }
-        }, 300);
+            return true;
+        });
+        localStorage.setItem(historyKey, JSON.stringify(userRecords));
+
+        // Visually fade out and remove card instantly
+        if (cardElement) {
+            cardElement.style.transition = 'all 0.3s ease';
+            cardElement.style.opacity = '0';
+            cardElement.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                cardElement.remove();
+                
+                // Check if there are any cards left to handle empty state dynamically
+                const remainingCards = historyGrid.querySelectorAll('.card-element');
+                if (remainingCards.length === 0) {
+                    loadPastRecords();
+                }
+            }, 300);
+        } else {
+            loadPastRecords();
+        }
+        showToast("Record deleted successfully.", "success");
     } else {
-        loadPastRecords();
+        showToast("Failed to delete record.", "error");
     }
 }
 
