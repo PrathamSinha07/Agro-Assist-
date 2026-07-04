@@ -5,7 +5,12 @@ function showToast(message, type = 'error') {
 
     // Mask raw exceptions/errors into user-friendly statements
     let friendlyMessage = message;
-    if (message.includes('API key') || message.includes('API_KEY') || message.includes('401') || message.includes('Quota Exceeded') || message.includes('quota')) {
+    if (message === "This email is already registered. Please log in instead." ||
+        message === "Account created successfully! Welcome to Agro Assist." ||
+        message === "Incorrect password. Please try again." ||
+        message === "No account found with this email. Please sign up.") {
+        friendlyMessage = message;
+    } else if (message.includes('API key') || message.includes('API_KEY') || message.includes('401') || message.includes('Quota Exceeded') || message.includes('quota')) {
         friendlyMessage = "API Credentials Issue or API Quota Exceeded.";
     } else if (message.includes('auth') || message.includes('password') || message.includes('credentials') || message.includes('login') || message.includes('Sign in')) {
         friendlyMessage = "Authentication Failed. Please check your credentials.";
@@ -270,12 +275,12 @@ loginForm.addEventListener('submit', (e) => {
     const matchedUser = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
 
     if (!matchedUser) {
-        showToast('Account not found. Please sign up first.', 'error');
+        showToast("No account found with this email. Please sign up.", "error");
         return;
     }
 
     if (matchedUser.password !== password) {
-        showToast('Invalid email or password. Please try again.', 'error');
+        showToast("Incorrect password. Please try again.", "error");
         return;
     }
 
@@ -298,7 +303,7 @@ signupForm.addEventListener('submit', (e) => {
     const userExists = registeredUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
 
     if (userExists) {
-        showToast('An account with this email is already registered. Please login.', 'error');
+        showToast("This email is already registered. Please log in instead.", "error");
         return;
     }
 
@@ -306,7 +311,7 @@ signupForm.addEventListener('submit', (e) => {
     registeredUsers.push({ name, email, password });
     localStorage.setItem('agro_assist_users', JSON.stringify(registeredUsers));
 
-    showToast('Account created successfully! Please sign in using your credentials.', 'success');
+    showToast("Account created successfully! Welcome to Agro Assist.", "success");
     showCard('login');
     document.getElementById('login-email').value = email;
 });
